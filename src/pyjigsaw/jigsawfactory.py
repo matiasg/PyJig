@@ -123,36 +123,32 @@ class Cut:
             if col < self.pieces_width:
                 # Generate curve
                 r = "C {x},{origin_h} {w_curve_1},{half_piece_h} {x}, {to_notch_start} S {w_curve_2},{control_point} {x},{to_notch_end} S {x},{y} {x},{y}".format(
-                    x=str(x),
-                    y=str(y),
+                    x=x,
+                    y=y,
                     origin_h=origin_h,
-                    half_piece_h=str(origin_h + (piece_h * 0.5)),
-                    w_curve_1=str(origin_w + (piece_w * curve_multiplier_1)),
-                    w_curve_2=str(origin_w + (piece_w * curve_multiplier_2)),
-                    to_notch_start=str(origin_h + to_v_notch),
-                    to_notch_end=str(origin_h + to_v_notch + v_notch),
-                    control_point=str(
-                        origin_h
-                        + (piece_h * 0.5)
-                        + ((to_v_notch + v_notch) - (piece_h * 0.5)) * 2
-                    ),
+                    half_piece_h=origin_h + (piece_h * 0.5),
+                    w_curve_1=origin_w + (piece_w * curve_multiplier_1),
+                    w_curve_2=origin_w + (piece_w * curve_multiplier_2),
+                    to_notch_start=origin_h + to_v_notch,
+                    to_notch_end=origin_h + to_v_notch + v_notch,
+                    control_point=origin_h
+                    + (piece_h * 0.5)
+                    + ((to_v_notch + v_notch) - (piece_h * 0.5)) * 2,
                 )
 
                 # Create an inverted verseion for replicating the Left side of the adjacent piece
                 r_inverted = "C {x},{y} {w_curve_1},{half_piece_h} {x}, {to_notch_start} S {w_curve_2},{control_point} {x},{to_notch_end} S {x},{origin_h} {x},{origin_h}".format(
-                    x=str(x),
-                    y=str(y),
+                    x=x,
+                    y=y,
                     origin_h=origin_h,
-                    half_piece_h=str(origin_h + (piece_h * 0.5)),
-                    w_curve_1=str(origin_w + (piece_w * curve_multiplier_1)),
-                    w_curve_2=str(origin_w + (piece_w * curve_multiplier_2)),
-                    to_notch_start=str(origin_h + to_v_notch + v_notch),
-                    to_notch_end=str(origin_h + to_v_notch),
-                    control_point=str(
-                        origin_h
-                        + (piece_h * 0.5)
-                        - ((to_v_notch + v_notch) - (piece_h * 0.5)) * 2
-                    ),
+                    half_piece_h=origin_h + (piece_h * 0.5),
+                    w_curve_1=origin_w + (piece_w * curve_multiplier_1),
+                    w_curve_2=origin_w + (piece_w * curve_multiplier_2),
+                    to_notch_start=origin_h + to_v_notch + v_notch,
+                    to_notch_end=origin_h + to_v_notch,
+                    control_point=origin_h
+                    + (piece_h * 0.5)
+                    - ((to_v_notch + v_notch) - (piece_h * 0.5)) * 2,
                 )
                 all_commands["{}-{}-l".format(row, col + 1)] = r_inverted
             else:
@@ -165,36 +161,32 @@ class Cut:
             if row < self.pieces_height:
                 # Generate curve
                 b = "C {x},{y} {half_piece_w},{w_curve_1} {to_notch_start},{y} S {control_point},{w_curve_2} {to_notch_end},{y} S {origin_w},{y} {origin_w},{y}".format(
-                    x=str(x),
-                    y=str(y),
+                    x=x,
+                    y=y,
                     origin_w=origin_w,
-                    half_piece_w=str(origin_w + (piece_w * 0.5)),
-                    w_curve_1=str(origin_h + (piece_h * curve_multiplier_1)),
-                    w_curve_2=str(origin_h + (piece_h * curve_multiplier_2)),
-                    to_notch_start=str(origin_w + to_h_notch + h_notch),
-                    to_notch_end=str(origin_w + to_h_notch),
-                    control_point=str(
-                        origin_w
-                        + (piece_w * 0.5)
-                        - ((to_h_notch + h_notch) - (piece_w * 0.5)) * 2
-                    ),
+                    half_piece_w=origin_w + (piece_w * 0.5),
+                    w_curve_1=origin_h + (piece_h * curve_multiplier_1),
+                    w_curve_2=origin_h + (piece_h * curve_multiplier_2),
+                    to_notch_start=origin_w + to_h_notch + h_notch,
+                    to_notch_end=origin_w + to_h_notch,
+                    control_point=origin_w
+                    + (piece_w * 0.5)
+                    - ((to_h_notch + h_notch) - (piece_w * 0.5)) * 2,
                 )
 
                 # Create an inverted version for replicating the Left side of the adjacent piece
                 b_inverted = "C {origin_w},{y} {half_piece_w},{w_curve_1} {to_notch_start},{y} S {control_point},{w_curve_2} {to_notch_end},{y} S {x},{y} {x},{y}".format(
-                    x=str(x),
-                    y=str(y),
+                    x=x,
+                    y=y,
                     origin_w=origin_w,
-                    half_piece_w=str(origin_w + (piece_w * 0.5)),
-                    w_curve_1=str(origin_h + (piece_h * curve_multiplier_1)),
-                    w_curve_2=str(origin_h + (piece_h * curve_multiplier_2)),
-                    to_notch_start=str(origin_w + to_h_notch),
-                    to_notch_end=str(origin_w + to_h_notch + h_notch),
-                    control_point=str(
-                        origin_w
-                        + (piece_w * 0.5)
-                        + ((to_h_notch + h_notch) - (piece_w * 0.5)) * 2
-                    ),
+                    half_piece_w=origin_w + (piece_w * 0.5),
+                    w_curve_1=origin_h + (piece_h * curve_multiplier_1),
+                    w_curve_2=origin_h + (piece_h * curve_multiplier_2),
+                    to_notch_start=origin_w + to_h_notch,
+                    to_notch_end=origin_w + to_h_notch + h_notch,
+                    control_point=origin_w
+                    + (piece_w * 0.5)
+                    + ((to_h_notch + h_notch) - (piece_w * 0.5)) * 2,
                 )
                 all_commands["{}-{}-t".format(row + 1, col)] = b_inverted
             else:
