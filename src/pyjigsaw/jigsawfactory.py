@@ -281,28 +281,18 @@ class Jigsaw:
             height = ymax - ymin
 
             top_left_corner = (
-                True
-                if metadata["Pieces"][p]["UpperEdge"]
-                and metadata["Pieces"][p]["LeftEdge"]
-                else False
+                metadata["Pieces"][p]["UpperEdge"] and metadata["Pieces"][p]["LeftEdge"]
             )
             top_right_corner = (
-                True
-                if metadata["Pieces"][p]["UpperEdge"]
+                metadata["Pieces"][p]["UpperEdge"]
                 and metadata["Pieces"][p]["RightEdge"]
-                else False
             )
             bottom_left_corner = (
-                True
-                if metadata["Pieces"][p]["LowerEdge"]
-                and metadata["Pieces"][p]["LeftEdge"]
-                else False
+                metadata["Pieces"][p]["LowerEdge"] and metadata["Pieces"][p]["LeftEdge"]
             )
             bottom_right_corner = (
-                True
-                if metadata["Pieces"][p]["LowerEdge"]
+                metadata["Pieces"][p]["LowerEdge"]
                 and metadata["Pieces"][p]["RightEdge"]
-                else False
             )
 
             top_anchor = 1
@@ -371,10 +361,6 @@ class Jigsaw:
         return "Svg puzzle set generated: {} ({} Pieces) Directory: {}".format(
             self.image, len(paths), outdirectory
         )
-
-
-# myjig = Jigsaw(mycut, "Zugpsitze_mountain.jpg")
-# print(myjig.generate_svg_jigsaw("./Pieces"))
 
 
 def jigsaw_factory():
