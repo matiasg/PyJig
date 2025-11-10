@@ -83,10 +83,10 @@ class Cut:
             metadata["Pieces"].append(
                 {
                     "PieceNumber": i,
-                    "UpperEdge": True if row == 1 else False,
-                    "LowerEdge": True if row == self.pieces_height else False,
-                    "LeftEdge": True if col == 1 else False,
-                    "RightEdge": True if col == self.pieces_width else False,
+                    "UpperEdge": row == 1,
+                    "LowerEdge": row == self.pieces_height,
+                    "LeftEdge": col == 1,
+                    "RightEdge": col == self.pieces_width,
                 }
             )
 
@@ -103,8 +103,7 @@ class Cut:
             h_notch = piece_w - (2 * to_h_notch)
 
             # Control points for the puzzle notch curve, randomise direction
-            curve_multiplier_1 = random.choice([0.85, 1.15])
-            curve_multiplier_2 = 0.85 if curve_multiplier_1 != 0.85 else 1.15
+            curve_multiplier_1, curve_multiplier_2 = random.sample([0.85, 1.15], 2)
 
             # Start command dictionary for storing commands for reuse on adjacent Pieces
             commands = []
@@ -223,9 +222,7 @@ class Cut:
     <svg width="{}" height="{}">
         {}
     </svg>
-        """.format(
-            self.abs_width, self.abs_height, paths
-        )
+        """.format(self.abs_width, self.abs_height, paths)
 
         self.svg_template = svg_template
 
@@ -358,18 +355,14 @@ class Jigsaw:
         </defs>
         <image href="data:image/{ext};base64,{encoded}" clip-path="url(#crop)"/>
     </svg>
-    """.format(
-                    xmin, ymin, w=width, h=height, d=path.d(), ext=ext, encoded=encoded
-                )
+    """.format(xmin, ymin, w=width, h=height, d=path.d(), ext=ext, encoded=encoded)
             else:
                 # SVG without image (just the path shape)
                 svg = """\
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="{} {} {w} {h}" width="{w}" height="{h}">
         <path d="{d}" stroke="black" fill="white"/>
     </svg>
-    """.format(
-                    xmin, ymin, w=width, h=height, d=path.d()
-                )
+    """.format(xmin, ymin, w=width, h=height, d=path.d())
             with open(os.path.join(outdirectory, "{}.svg".format(p)), "w") as file:
                 file.write(svg)
 
