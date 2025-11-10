@@ -1,20 +1,21 @@
 import base64
-from math import ceil
+import logging
+import os
 import random
+import tempfile
+from math import ceil
+
 from PIL import Image
 from svgpathtools import svg2paths
-import tempfile
-import os
 
 """
 Generate jigsaw motifs and digital puzzle sets.
 
 Functions:
-generate_motif
-generate_masks
-generate_jigsaw
 jigsaw_factory
 """
+
+logger = logging.getLogger(__name__)
 
 
 class Cut:
@@ -54,7 +55,7 @@ class Cut:
             self.abs_width = width
             self.abs_height = height
 
-        print(self.update_cut_template())
+        self.update_cut_template()
 
     def update_cut_template(self):
         piece_w = self.abs_width // self.pieces_width
@@ -220,15 +221,13 @@ class Cut:
 
         self.metadata = metadata
 
-        return "Puzzle template update complete"
+        logger.info("Puzzle template update complete")
 
     def to_svg(self, filepath):
-        print(self.update_cut_template())
-        svg_file = open(filepath, "w")
-        svg_file.write(self.svg_template)
-        svg_file.close()
-
-        return "Puzzle cut template created {}".format(filepath)
+        self.update_cut_template()
+        with open(filepath, "w") as svg_file:
+            svg_file.write(self.svg_template)
+        logger.info("Puzzle cut template created %s", filepath)
 
 
 # mycut = Cut(5, 4, image="./Zugpsitze_mountain.jpg", use_image=True)
