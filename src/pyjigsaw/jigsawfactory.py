@@ -8,13 +8,6 @@ from math import ceil
 from PIL import Image
 from svgpathtools import svg2paths
 
-"""
-Generate jigsaw motifs and digital puzzle sets.
-
-Functions:
-jigsaw_factory
-"""
-
 logger = logging.getLogger(__name__)
 
 
@@ -242,6 +235,23 @@ def image_encode(original_image):
 
 
 class Jigsaw:
+    IMAGE_SVG = """\
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="{} {} {w} {h}" width="{w}" height="{h}">
+        <defs>
+            <path id="cropPath" d="{d}" />
+            <clipPath id="crop">
+                <use href="#cropPath" />
+            </clipPath>
+        </defs>
+        <image href="data:image/{ext};base64,{encoded}" clip-path="url(#crop)"/>
+    </svg>
+    """
+    NO_IMAGE_SVG = """\
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="{} {} {w} {h}" width="{w}" height="{h}">
+        <path d="{d}" stroke="black" fill="white"/>
+    </svg>
+    """
+
     def __init__(self, cut: Cut, image=None):
         self.cut = cut
         self.image = image
@@ -271,79 +281,16 @@ class Jigsaw:
             width = xmax - xmin
             height = ymax - ymin
 
-            top_left_corner = (
-                metadata["Pieces"][p]["UpperEdge"] and metadata["Pieces"][p]["LeftEdge"]
-            )
-            top_right_corner = (
-                metadata["Pieces"][p]["UpperEdge"]
-                and metadata["Pieces"][p]["RightEdge"]
-            )
-            bottom_left_corner = (
-                metadata["Pieces"][p]["LowerEdge"] and metadata["Pieces"][p]["LeftEdge"]
-            )
-            bottom_right_corner = (
-                metadata["Pieces"][p]["LowerEdge"]
-                and metadata["Pieces"][p]["RightEdge"]
-            )
-
-            top_anchor = 1
-            if top_left_corner or metadata["Pieces"][p]["UpperEdge"]:
-                right_anchor = 3
-                left_anchor = 27
-            elif top_right_corner:
-                right_anchor = 3
-                left_anchor = 17
-            elif metadata["Pieces"][p]["RightEdge"]:
-                right_anchor = 13
-                left_anchor = 27
-            elif bottom_right_corner:
-                right_anchor = 13
-                left_anchor = 17
-            elif bottom_left_corner or metadata["Pieces"][p]["LowerEdge"]:
-                right_anchor = 13
-                left_anchor = 27
-            else:
-                right_anchor = 13
-                left_anchor = 37
-
-            midpoint_top = (
-                float(path.d().split(" ")[top_anchor].split(",")[0]) - float(xmin)
-            ) + (metadata["PieceWidth"] / 2)
-            midpoint_right = (
-                float(path.d().split(" ")[right_anchor].split(",")[1]) - float(ymin)
-            ) + (metadata["PieceHeight"] / 2)
-            midpoint_bottom = (
-                float(path.d().split(" ")[left_anchor].split(",")[0]) - float(xmin)
-            ) + (metadata["PieceWidth"] / 2)
-            midpoint_left = (
-                float(path.d().split(" ")[top_anchor].split(",")[1]) - float(ymin)
-            ) + (metadata["PieceHeight"] / 2)
-
-            metadata["Pieces"][p]["MidpointTop"] = midpoint_top
-            metadata["Pieces"][p]["MidpointRight"] = midpoint_right
-            metadata["Pieces"][p]["MidpointBottom"] = midpoint_bottom
-            metadata["Pieces"][p]["MidpointLeft"] = midpoint_left
-
             if self.image and ext and encoded:
                 # SVG with image
-                svg = """\
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="{} {} {w} {h}" width="{w}" height="{h}">
-        <defs>
-            <path id="cropPath" d="{d}" />
-            <clipPath id="crop">
-                <use href="#cropPath" />
-            </clipPath>
-        </defs>
-        <image href="data:image/{ext};base64,{encoded}" clip-path="url(#crop)"/>
-    </svg>
-    """.format(xmin, ymin, w=width, h=height, d=path.d(), ext=ext, encoded=encoded)
+                svg = self.IMAGE_SVG.format(
+                    xmin, ymin, w=width, h=height, d=path.d(), ext=ext, encoded=encoded
+                )
             else:
                 # SVG without image (just the path shape)
-                svg = """\
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="{} {} {w} {h}" width="{w}" height="{h}">
-        <path d="{d}" stroke="black" fill="white"/>
-    </svg>
-    """.format(xmin, ymin, w=width, h=height, d=path.d())
+                svg = self.NO_IMAGE_SVG.format(
+                    xmin, ymin, w=width, h=height, d=path.d()
+                )
             with open(os.path.join(outdirectory, "{}.svg".format(p)), "w") as file:
                 file.write(svg)
 
@@ -352,8 +299,3 @@ class Jigsaw:
         return "Svg puzzle set generated: {} ({} Pieces) Directory: {}".format(
             self.image, len(paths), outdirectory
         )
-
-
-def jigsaw_factory():
-    """Execute the motif, masks and jigsaw logic sequentially"""
-    pass
