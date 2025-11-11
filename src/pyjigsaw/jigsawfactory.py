@@ -106,8 +106,8 @@ class Cut:
             else:
                 # Edge piece
                 t = "L {}, {}".format(str(x), str(origin_h))
+                all_commands["{}-{}-t".format(row, col)] = t
             commands.append(t)
-            all_commands["{}-{}-t".format(row, col)] = t
 
             # Right section
             if col < self.pieces_width:
