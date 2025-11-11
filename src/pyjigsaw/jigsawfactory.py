@@ -32,15 +32,15 @@ class Cut:
         self.fill_color = fill_color
         self.use_image = use_image
         if use_image and self.image is None:
-            raise Exception("No image provided")
+            raise ValueError("No image provided")
 
         if (self.abs_height is None or self.abs_width is None) and self.image is None:
-            raise Exception(
+            raise ValueError(
                 "Height and width of the desired template must either be provided manually, or an image must be provided for it to be derived from."
             )
 
         if not use_image and (self.abs_height is None or self.abs_width is None):
-            raise Exception(
+            raise ValueError(
                 "Please either set a height and width or pass use_image=True in your function call"
             )
         if use_image and self.image is not None:
@@ -130,7 +130,7 @@ class Cut:
                     + ((to_v_notch + v_notch) - (piece_h * 0.5)) * 2,
                 )
 
-                # Create an inverted verseion for replicating the Left side of the adjacent piece
+                # Create an inverted version for replicating the Left side of the adjacent piece
                 r_inverted = "C {x},{y} {w_curve_1},{half_piece_h} {x}, {to_notch_start} S {w_curve_2},{control_point} {x},{to_notch_end} S {x},{origin_h} {x},{origin_h}".format(
                     x=x,
                     y=y,
