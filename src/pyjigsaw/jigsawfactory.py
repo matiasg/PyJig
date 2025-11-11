@@ -257,8 +257,6 @@ class Jigsaw:
         self.image = image
 
     def generate_svg_jigsaw(self, outdirectory):
-        metadata = self.cut.metadata
-
         # Create output directory if it doesn't exist
         os.makedirs(outdirectory, exist_ok=True)
 
@@ -291,8 +289,9 @@ class Jigsaw:
             with open(os.path.join(outdirectory, "{}.svg".format(p)), "w") as file:
                 file.write(svg)
 
-        self.cut.metadata = metadata
-
-        return "Svg puzzle set generated: {} ({} Pieces) Directory: {}".format(
-            self.image, len(paths), outdirectory
+        logger.info(
+            "Svg puzzle set generated: %s (%d Pieces) Directory: %s",
+            self.image,
+            len(paths),
+            outdirectory,
         )
