@@ -14,39 +14,35 @@ logger = logging.getLogger(__name__)
 class Cut:
     def __init__(
         self,
-        pieces_height,
-        pieces_width,
-        abs_height=None,
-        abs_width=None,
-        image=None,
-        use_image=False,
-        stroke_color="black",
-        fill_color="white",
+        pieces_height: int,
+        pieces_width: int,
+        abs_height: int | None = None,
+        abs_width: int | None = None,
+        image: str | None = None,
+        stroke_color: str = "black",
+        fill_color: str = "white",
     ):
         self.pieces_height = pieces_height
         self.pieces_width = pieces_width
-        self.abs_height = abs_height
-        self.abs_width = abs_width
+        self.abs_height: int
+        self.abs_width: int
         self.image = image
         self.stroke_color = stroke_color
         self.fill_color = fill_color
-        self.use_image = use_image
-        if use_image and self.image is None:
-            raise ValueError("No image provided")
+        self.use_image = image is not None
 
-        if (self.abs_height is None or self.abs_width is None) and self.image is None:
-            raise ValueError(
-                "Height and width of the desired template must either be provided manually, or an image must be provided for it to be derived from."
+        if self.image is None:
+            assert abs_height is not None and abs_width is not None, (
+                "Please either set a height and width or pass an image in your function call"
             )
-
-        if not use_image and (self.abs_height is None or self.abs_width is None):
-            raise ValueError(
-                "Please either set a height and width or pass use_image=True in your function call"
-            )
-        if use_image and self.image is not None:
-            width, height = Image.open(self.image).size
-            self.abs_width = width
-            self.abs_height = height
+            self.abs_height = abs_height
+            self.abs_width = abs_width
+        else:
+            if abs_height is not None or abs_width is not None:
+                logger.warning(
+                    "abs_height and abs_width parameters are ignored when an image is provided"
+                )
+            self.abs_width, self.abs_height = Image.open(self.image).size
 
         self.update_cut_template()
 
