@@ -204,13 +204,11 @@ class Cut:
             paths.append(path)
 
         paths = "\n\t".join(paths)
-        svg_template = """\
+        self.svg_template = """\
     <svg width="{}" height="{}">
         {}
     </svg>
         """.format(self.abs_width, self.abs_height, paths)
-
-        self.svg_template = svg_template
 
         self.metadata = metadata
 
@@ -221,9 +219,6 @@ class Cut:
         with open(filepath, "w") as svg_file:
             svg_file.write(self.svg_template)
         logger.info("Puzzle cut template created %s", filepath)
-
-
-# mycut = Cut(5, 4, image="./Zugpsitze_mountain.jpg", use_image=True)
 
 
 def image_encode(original_image):
