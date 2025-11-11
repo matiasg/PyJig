@@ -2,7 +2,7 @@ import base64
 import logging
 import os
 import random
-import tempfile
+from io import StringIO
 from math import ceil
 
 from PIL import Image
@@ -262,17 +262,14 @@ class Jigsaw:
         # Create output directory if it doesn't exist
         os.makedirs(outdirectory, exist_ok=True)
 
-        fp = tempfile.NamedTemporaryFile(suffix=".SVG")
-
-        fp.write(self.cut.svg_template.encode("utf-8"))
-        fp.flush()  # Ensure content is written to disk before reading
-
         if self.image:
             ext, encoded = image_encode(self.image)
         else:
             ext, encoded = None, None
-        paths, _ = svg2paths(fp.name)
-        fp.close()
+
+        paths_ = svg2paths(StringIO(self.cut.svg_template))
+        assert len(paths_) == 2
+        paths, _ = paths_
 
         # Apply bounding box for each path and generate svg from template
         for p, path in enumerate(paths):
