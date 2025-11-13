@@ -97,7 +97,7 @@ class Cut:
 
             # Start command dictionary for storing commands for reuse on adjacent Pieces
             commands = []
-            commands.append("M {}, {}".format(origin_w, origin_h))
+            commands.append("M {},{}".format(origin_w, origin_h))
 
             # Top section
             if row > 1:
@@ -105,14 +105,17 @@ class Cut:
                 t = all_commands["{}-{}-t".format(row, col)]
             else:
                 # Edge piece
-                t = "L {}, {}".format(str(x), str(origin_h))
+                t = "L {},{}".format(str(x), str(origin_h))
                 all_commands["{}-{}-t".format(row, col)] = t
             commands.append(t)
 
             # Right section
             if col < self.pieces_width:
                 # Generate curve
-                r = "C {x},{origin_h} {w_curve_1},{half_piece_h} {x}, {to_notch_start} S {w_curve_2},{control_point} {x},{to_notch_end} S {x},{y} {x},{y}".format(
+                r = (
+                    "C {x},{origin_h} {w_curve_1},{half_piece_h} {x},{to_notch_start} "
+                    "S {w_curve_2},{control_point} {x},{to_notch_end} S {x},{y} {x},{y}"
+                ).format(
                     x=x,
                     y=y,
                     origin_h=origin_h,
@@ -127,7 +130,10 @@ class Cut:
                 )
 
                 # Create an inverted version for replicating the Left side of the adjacent piece
-                r_inverted = "C {x},{y} {w_curve_1},{half_piece_h} {x}, {to_notch_start} S {w_curve_2},{control_point} {x},{to_notch_end} S {x},{origin_h} {x},{origin_h}".format(
+                r_inverted = (
+                    "C {x},{y} {w_curve_1},{half_piece_h} {x},{to_notch_start} "
+                    "S {w_curve_2},{control_point} {x},{to_notch_end} S {x},{origin_h} {x},{origin_h}"
+                ).format(
                     x=x,
                     y=y,
                     origin_h=origin_h,
