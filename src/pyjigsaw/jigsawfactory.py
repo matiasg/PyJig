@@ -86,102 +86,93 @@ class Cut:
                 }
             )
 
-            # Set pixel start and end positions
-            origin = (col - 1) * piece_width + (row - 1) * piece_height
-            end = origin + piece_end
-            vertex_w = origin + piece_width
-            vertex_h = origin + piece_height
+            # Set piece vertices
+            v_00 = (col - 1) * piece_width + (row - 1) * piece_height
+            v_11 = v_00 + piece_end
+            v_10 = v_00 + piece_width
+            v_01 = v_00 + piece_height
 
-            # Calculate distance to the start of the notch
+            # Notch and notch_start should actually live in R^2 but at this point it is easier to make them in C
             notch_start = piece_end * (1 - notch_size) / 2
             notch = piece_end * notch_size
 
             # Control points for the puzzle notch curve, randomise direction
             curve_bend = 0.15
-            side = random.choice([-1, 1])
-            curve_multiplier_1, curve_multiplier_2 = (
-                1 + side * curve_bend,
-                1 - side * curve_bend,
-            )
-
-            # curve_multiplier_1, curve_multiplier_2 = random.sample([0.85, 1.15], 2)
+            side = random.choice([-curve_bend, curve_bend])
+            bend_p, bend_m = 1 + side, 1 - side
 
             # Start command dictionary for storing commands for reuse on adjacent Pieces
             commands = []
-            commands.append(f"M {xy(origin)}")
+            commands.append(f"M {xy(v_00)}")
 
             # Top section
             if row > 1:
                 # Use inverted command from adjacent piece
-                t = all_commands["{}-{}-t".format(row, col)]
+                t = all_commands[f"{row}-{col}-t"]
             else:
                 # Edge piece
-                t = f"L {xy(vertex_w)}"
-                all_commands["{}-{}-t".format(row, col)] = t
+                t = f"L {xy(v_10)}"
+                all_commands[f"{row}-{col}-t"] = t
             commands.append(t)
 
             # Right section
             if col < self.pieces_width:
                 # Generate curve
-                control_point_1 = (
-                    origin + piece_width * curve_multiplier_1 + piece_height * 0.5
-                )
-                control_point_2 = vertex_w + notch_start.imag * 1j
+                control_point_1 = v_00 + piece_width * bend_p + piece_height * 0.5
+                control_point_2 = v_10 + notch_start.imag * 1j
                 control_point_3 = (
-                    origin
-                    + piece_width * curve_multiplier_2
-                    + piece_height * (0.5 + notch_size)
+                    v_00 + piece_width * bend_m + piece_height * (0.5 + notch_size)
                 )
-                control_point_4 = vertex_w + (notch_start + notch).imag * 1j
+                control_point_4 = v_10 + (notch_start + notch).imag * 1j
                 r = (
-                    f"C {xy(vertex_w)} {xy(control_point_1)} {xy(control_point_2)} "
+                    f"C {xy(v_10)} {xy(control_point_1)} {xy(control_point_2)} "
                     f"S {xy(control_point_3)} {xy(control_point_4)} "
-                    f"S {xy(end)} {xy(end)}"
+                    f"S {xy(v_11)} {xy(v_11)}"
                 )
 
                 # Create an inverted version for replicating the Left side of the adjacent piece
                 control_point_5 = control_point_2 + notch.imag * 1j
                 control_point_7 = control_point_4 - notch.imag * 1j
                 control_point_6 = (
-                    origin
-                    + piece_width * curve_multiplier_2
+                    v_00
+                    + piece_width * bend_m
                     + piece_height * 1.5
                     - (notch_start + notch).imag * 2 * 1j
                 )
                 r_inverted = (
-                    f"C {xy(end)} {xy(control_point_1)} {xy(control_point_5)} "
+                    f"C {xy(v_11)} {xy(control_point_1)} {xy(control_point_5)} "
                     f"S {xy(control_point_6)} {xy(control_point_7)} "
-                    f"S {xy(vertex_w)} {xy(vertex_w)}"
+                    f"S {xy(v_10)} {xy(v_10)}"
                 )
-                all_commands["{}-{}-l".format(row, col + 1)] = r_inverted
+                all_commands[f"{row}-{col + 1}-l"] = r_inverted
             else:
                 # Edge piece
-                r = f"L {xy(end)}"
+                r = f"L {xy(v_11)}"
 
             commands.append(r)
 
             # Bottom section
             if row < self.pieces_height:
                 control_point_1 = (
-                    origin
+                    v_00
                     + half_piece_end
                     - half_piece_end.imag * 1j
-                    + piece_height * curve_multiplier_1
+                    + piece_height * bend_p
                 )
-                control_point_2 = vertex_h + (notch + notch_start).real
+                control_point_2 = v_01 + (notch + notch_start).real
                 control_point_3 = (
-                    origin
+                    v_00
                     + piece_width * 1.5
                     - notch_start.real * 2
                     - notch.real * 2
-                    + piece_height * curve_multiplier_2
+                    + piece_height * bend_m
                 )
-                control_point_4 = vertex_h + notch_start.real
-                control_point_5 = origin + piece_height
+                control_point_4 = v_01 + notch_start.real
+                control_point_5 = v_00 + piece_height
 
                 # Generate curve
                 b = (
-                    f"C {xy(end)} {xy(control_point_1)} {xy(control_point_2)} "
+                    f"C {xy(v_11)} {xy(control_point_1)} {xy(control_point_2)} "
                     f"S {xy(control_point_3)} {xy(control_point_4)} "
                     f"S {xy(control_point_5)} {xy(control_point_5)}"
                 )
@@ -189,27 +180,27 @@ class Cut:
                 # Create an inverted version for replicating the Left side of the adjacent piece
                 control_point_6 = control_point_2 - notch.real
                 control_point_7 = (
-                    origin
+                    v_00
                     - piece_width * 0.5
                     + notch_start.real * 2
                     + notch.real * 2
-                    + piece_height * curve_multiplier_2
+                    + piece_height * bend_m
                 )
                 control_point_8 = control_point_4 + notch.real
                 b_inverted = (
                     f"C {xy(control_point_5)} {xy(control_point_1)} {xy(control_point_6)} "
                     f"S {xy(control_point_7)} {xy(control_point_8)} "
-                    f"S {xy(end)} {xy(end)}"
+                    f"S {xy(v_11)} {xy(v_11)}"
                 )
-                all_commands["{}-{}-t".format(row + 1, col)] = b_inverted
+                all_commands[f"{row + 1}-{col}-t"] = b_inverted
             else:
                 # Edge piece
-                b = f"L {xy(vertex_h)}"
+                b = f"L {xy(v_01)}"
 
             commands.append(b)
 
             if col > 1:
-                left_command = all_commands["{}-{}-l".format(row, col)]
+                left_command = all_commands[f"{row}-{col}-l"]
                 commands.append(left_command)
 
             # Close path (including straight line if Left edge piece)
@@ -217,17 +208,15 @@ class Cut:
 
             # Construct path element
             d = "\n\t".join(commands)
-            path = '<path stroke="{}" fill="{}" d="{}" />'.format(
-                self.stroke_color, self.fill_color, d
-            )
+            path = f'<path stroke="{self.stroke_color}" fill="{self.fill_color}" d="{d}" />'
             paths.append(path)
 
         paths = "\n\t".join(paths)
-        self.svg_template = """\
-    <svg width="{}" height="{}">
-        {}
+        self.svg_template = f"""\
+    <svg width="{self.abs_width}" height="{self.abs_height}">
+        {paths}
     </svg>
-        """.format(self.abs_width, self.abs_height, paths)
+        """
 
         self.metadata = metadata
 
@@ -300,7 +289,7 @@ class Jigsaw:
                 svg = self.NO_IMAGE_SVG.format(
                     xmin, ymin, w=width, h=height, d=path.d()
                 )
-            with open(os.path.join(outdirectory, "{}.svg".format(p)), "w") as file:
+            with open(os.path.join(outdirectory, f"{p}.svg"), "w") as file:
                 file.write(svg)
 
         logger.info(
