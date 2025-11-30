@@ -90,10 +90,10 @@ class Cut:
             # Set pixel start and end positions
             origin_x = (col - 1) * piece_width  # remove
             origin_y = (row - 1) * piece_height  # remove
-            end_x = origin_x + piece_width  # remove
-            end_y = origin_y + piece_height  # remove
             origin = (col - 1) * piece_width + (row - 1) * piece_height * 1j
             end = origin + piece_end
+            vertex_w = origin + piece_width
+            vertex_h = origin + piece_height * 1j
 
             # Calculate distance to the start of the notch
             to_x_notch = piece_width * notch_start  # remove
@@ -116,21 +116,20 @@ class Cut:
                 t = all_commands["{}-{}-t".format(row, col)]
             else:
                 # Edge piece
-                t = f"L {end.real:g},{origin.imag:g}"
+                t = f"L {xy(vertex_w)}"
                 all_commands["{}-{}-t".format(row, col)] = t
             commands.append(t)
 
             # Right section
             if col < self.pieces_width:
                 # Generate curve
-                control_point_0 = end.real + origin.imag * 1j
                 control_point_1 = (
                     origin
                     + (piece_width * curve_multiplier_1)
                     - half_piece_end.real
                     + half_piece_end
                 )
-                control_point_2 = end.real + (origin + to_notch).imag * 1j
+                control_point_2 = vertex_w + to_notch.imag * 1j
                 control_point_3 = (
                     origin.real
                     + (piece_width * curve_multiplier_2)
@@ -141,9 +140,9 @@ class Cut:
                     )
                     * 1j
                 )
-                control_point_4 = end.real + (origin + to_notch + notch).imag * 1j
+                control_point_4 = vertex_w + (to_notch + notch).imag * 1j
                 r = (
-                    f"C {xy(control_point_0)} {xy(control_point_1)} {xy(control_point_2)} "
+                    f"C {xy(vertex_w)} {xy(control_point_1)} {xy(control_point_2)} "
                     f"S {xy(control_point_3)} {xy(control_point_4)} "
                     f"S {xy(end)} {xy(end)}"
                 )
@@ -164,12 +163,12 @@ class Cut:
                 r_inverted = (
                     f"C {xy(end)} {xy(control_point_1)} {xy(control_point_5)} "
                     f"S {xy(control_point_6)} {xy(control_point_7)} "
-                    f"S {xy(control_point_0)} {xy(control_point_0)}"
+                    f"S {xy(vertex_w)} {xy(vertex_w)}"
                 )
                 all_commands["{}-{}-l".format(row, col + 1)] = r_inverted
             else:
                 # Edge piece
-                r = "L {},{}".format(end_x, end_y)
+                r = f"L {xy(end)}"
 
             commands.append(r)
 
@@ -180,13 +179,13 @@ class Cut:
                     + half_piece_end
                     + (-half_piece_end.imag + piece_height * curve_multiplier_1) * 1j
                 )
-                control_point_2 = (origin + notch + to_notch).real + end.imag * 1j
+                control_point_2 = vertex_h + (notch + to_notch).real
                 control_point_3 = (
                     origin_x
                     + (piece_width * 0.5)
                     - ((to_x_notch + x_notch) - (piece_width * 0.5)) * 2
                 ) + (origin_y + (piece_height * curve_multiplier_2)) * 1j
-                control_point_4 = origin_x + to_x_notch + end.imag * 1j
+                control_point_4 = vertex_h + to_x_notch
                 control_point_5 = origin + piece_height * 1j
 
                 # Generate curve
@@ -212,7 +211,7 @@ class Cut:
                 all_commands["{}-{}-t".format(row + 1, col)] = b_inverted
             else:
                 # Edge piece
-                b = "L {},{}".format(origin_x, end_y)
+                b = f"L {xy(vertex_h)}"
 
             commands.append(b)
 
