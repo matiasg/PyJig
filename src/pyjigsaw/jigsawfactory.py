@@ -11,6 +11,10 @@ from svgpathtools import svg2paths
 logger = logging.getLogger(__name__)
 
 
+def xy(z: complex) -> str:
+    return f"{z.real:g},{z.imag:g}"
+
+
 class Cut:
     def __init__(
         self,
@@ -50,6 +54,8 @@ class Cut:
         notch_start = (1 - notch_size) / 2
         piece_width = self.abs_width // self.pieces_width
         piece_height = self.abs_height // self.pieces_height
+        piece_end = piece_width + piece_height * 1j
+        half_piece_end = piece_end / 2
         number_of_pieces = self.pieces_height * self.pieces_width
         col = 0
         paths = []
@@ -82,23 +88,27 @@ class Cut:
             )
 
             # Set pixel start and end positions
-            origin_x = (col - 1) * piece_width
-            origin_y = (row - 1) * piece_height
-            end_x = origin_x + piece_width
-            end_y = origin_y + piece_height
+            origin_x = (col - 1) * piece_width  # remove
+            origin_y = (row - 1) * piece_height  # remove
+            end_x = origin_x + piece_width  # remove
+            end_y = origin_y + piece_height  # remove
+            origin = (col - 1) * piece_width + (row - 1) * piece_height * 1j
+            end = origin + piece_end
 
             # Calculate distance to the start of the notch
-            to_x_notch = piece_width * notch_start
-            to_y_notch = piece_height * notch_start
-            x_notch = piece_width * notch_size
-            y_notch = piece_height * notch_size
+            to_x_notch = piece_width * notch_start  # remove
+            to_y_notch = piece_height * notch_start  # remove
+            x_notch = piece_width * notch_size  # remove
+            y_notch = piece_height * notch_size  # remove
+            to_notch = piece_end * notch_start
+            notch = piece_end * notch_size
 
             # Control points for the puzzle notch curve, randomise direction
             curve_multiplier_1, curve_multiplier_2 = random.sample([0.85, 1.15], 2)
 
             # Start command dictionary for storing commands for reuse on adjacent Pieces
             commands = []
-            commands.append("M {},{}".format(origin_x, origin_y))
+            commands.append(f"M {origin.real:g},{origin.imag:g}")
 
             # Top section
             if row > 1:
@@ -106,28 +116,36 @@ class Cut:
                 t = all_commands["{}-{}-t".format(row, col)]
             else:
                 # Edge piece
-                t = "L {},{}".format(str(end_x), str(origin_y))
+                t = f"L {end.real:g},{origin.imag:g}"
                 all_commands["{}-{}-t".format(row, col)] = t
             commands.append(t)
 
             # Right section
             if col < self.pieces_width:
                 # Generate curve
+                control_point_0 = end.real + origin.imag * 1j
+                control_point_1 = (
+                    origin
+                    + (piece_width * curve_multiplier_1)
+                    - half_piece_end.real
+                    + half_piece_end
+                )
+                control_point_2 = end.real + (origin + to_notch).imag * 1j
+                control_point_3 = (
+                    origin.real
+                    + (piece_width * curve_multiplier_2)
+                    + (
+                        origin.imag
+                        + (piece_height * 0.5)
+                        + ((to_y_notch + y_notch) - (piece_height * 0.5)) * 2
+                    )
+                    * 1j
+                )
+                control_point_4 = end.real + (origin + to_notch + notch).imag * 1j
                 r = (
-                    "C {x:g},{origin_h:g} {w_curve_1:g},{half_piece_h:g} {x:g},{to_notch_start:g} "
-                    "S {w_curve_2:g},{control_point:g} {x:g},{to_notch_end:g} S {x:g},{y:g} {x:g},{y:g}"
-                ).format(
-                    x=end_x,
-                    y=end_y,
-                    origin_h=origin_y,
-                    half_piece_h=origin_y + (piece_height * 0.5),
-                    w_curve_1=origin_x + (piece_width * curve_multiplier_1),
-                    w_curve_2=origin_x + (piece_width * curve_multiplier_2),
-                    to_notch_start=origin_y + to_y_notch,
-                    to_notch_end=origin_y + to_y_notch + y_notch,
-                    control_point=origin_y
-                    + (piece_height * 0.5)
-                    + ((to_y_notch + y_notch) - (piece_height * 0.5)) * 2,
+                    f"C {xy(control_point_0)} {xy(control_point_1)} {xy(control_point_2)} "
+                    f"S {xy(control_point_3)} {xy(control_point_4)} "
+                    f"S {xy(end)} {xy(end)}"
                 )
 
                 # Create an inverted version for replicating the Left side of the adjacent piece
