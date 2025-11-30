@@ -88,8 +88,6 @@ class Cut:
             )
 
             # Set pixel start and end positions
-            origin_x = (col - 1) * piece_width  # remove
-            origin_y = (row - 1) * piece_height  # remove
             origin = (col - 1) * piece_width + (row - 1) * piece_height * 1j
             end = origin + piece_end
             vertex_w = origin + piece_width
@@ -131,14 +129,9 @@ class Cut:
                 )
                 control_point_2 = vertex_w + to_notch.imag * 1j
                 control_point_3 = (
-                    origin.real
-                    + (piece_width * curve_multiplier_2)
-                    + (
-                        origin.imag
-                        + (piece_height * 0.5)
-                        + ((to_y_notch + y_notch) - (piece_height * 0.5)) * 2
-                    )
-                    * 1j
+                    origin
+                    + piece_width * curve_multiplier_2
+                    + (-piece_height * 0.5 + to_y_notch * 2 + y_notch * 2) * 1j
                 )
                 control_point_4 = vertex_w + (to_notch + notch).imag * 1j
                 r = (
@@ -151,14 +144,9 @@ class Cut:
                 control_point_5 = control_point_2 + notch.imag * 1j
                 control_point_7 = control_point_4 - notch.imag * 1j
                 control_point_6 = (
-                    origin.real
-                    + (piece_width * curve_multiplier_2)
-                    + (
-                        origin.imag
-                        + (piece_height * 0.5)
-                        - ((to_y_notch + y_notch) - (piece_height * 0.5)) * 2
-                    )
-                    * 1j
+                    origin
+                    + piece_width * curve_multiplier_2
+                    + (piece_height * 1.5 - to_y_notch * 2 - y_notch * 2) * 1j
                 )
                 r_inverted = (
                     f"C {xy(end)} {xy(control_point_1)} {xy(control_point_5)} "
@@ -181,10 +169,12 @@ class Cut:
                 )
                 control_point_2 = vertex_h + (notch + to_notch).real
                 control_point_3 = (
-                    origin_x
-                    + (piece_width * 0.5)
-                    - ((to_x_notch + x_notch) - (piece_width * 0.5)) * 2
-                ) + (origin_y + (piece_height * curve_multiplier_2)) * 1j
+                    origin
+                    + piece_width * 1.5
+                    - to_x_notch * 2
+                    - x_notch * 2
+                    + (piece_height * curve_multiplier_2) * 1j
+                )
                 control_point_4 = vertex_h + to_x_notch
                 control_point_5 = origin + piece_height * 1j
 
@@ -198,10 +188,12 @@ class Cut:
                 # Create an inverted version for replicating the Left side of the adjacent piece
                 control_point_6 = control_point_2 - notch.real
                 control_point_7 = (
-                    origin_x
-                    + (piece_width * 0.5)
-                    + ((to_x_notch + x_notch) - (piece_width * 0.5)) * 2
-                ) + (origin_y + (piece_height * curve_multiplier_2)) * 1j
+                    origin
+                    - piece_width * 0.5
+                    + to_x_notch * 2
+                    + x_notch * 2
+                    + (piece_height * curve_multiplier_2) * 1j
+                )
                 control_point_8 = control_point_4 + notch.real
                 b_inverted = (
                     f"C {xy(control_point_5)} {xy(control_point_1)} {xy(control_point_6)} "
