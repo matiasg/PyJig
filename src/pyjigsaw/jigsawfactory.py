@@ -175,34 +175,39 @@ class Cut:
 
             # Bottom section
             if row < self.pieces_height:
-                # Generate curve
-                b = "C {x:g},{y:g} {half_piece_w:g},{w_curve_1:g} {to_notch_start:g},{y:g} S {control_point:g},{w_curve_2:g} {to_notch_end:g},{y:g} S {origin_w:g},{y:g} {origin_w:g},{y:g}".format(
-                    x=end_x,
-                    y=end_y,
-                    origin_w=origin_x,
-                    half_piece_w=origin_x + (piece_width * 0.5),
-                    w_curve_1=origin_y + (piece_height * curve_multiplier_1),
-                    w_curve_2=origin_y + (piece_height * curve_multiplier_2),
-                    to_notch_start=origin_x + to_x_notch + x_notch,
-                    to_notch_end=origin_x + to_x_notch,
-                    control_point=origin_x
+                control_point_1 = (
+                    origin
+                    + half_piece_end
+                    + (-half_piece_end.imag + piece_height * curve_multiplier_1) * 1j
+                )
+                control_point_2 = (origin + notch + to_notch).real + end.imag * 1j
+                control_point_3 = (
+                    origin_x
                     + (piece_width * 0.5)
-                    - ((to_x_notch + x_notch) - (piece_width * 0.5)) * 2,
+                    - ((to_x_notch + x_notch) - (piece_width * 0.5)) * 2
+                ) + (origin_y + (piece_height * curve_multiplier_2)) * 1j
+                control_point_4 = origin_x + to_x_notch + end.imag * 1j
+                control_point_5 = origin + piece_height * 1j
+
+                # Generate curve
+                b = (
+                    f"C {xy(end)} {xy(control_point_1)} {xy(control_point_2)} "
+                    f"S {xy(control_point_3)} {xy(control_point_4)} "
+                    f"S {xy(control_point_5)} {xy(control_point_5)}"
                 )
 
                 # Create an inverted version for replicating the Left side of the adjacent piece
-                b_inverted = "C {origin_w:g},{y:g} {half_piece_w:g},{w_curve_1:g} {to_notch_start:g},{y:g} S {control_point:g},{w_curve_2:g} {to_notch_end:g},{y:g} S {x:g},{y:g} {x:g},{y:g}".format(
-                    x=end_x,
-                    y=end_y,
-                    origin_w=origin_x,
-                    half_piece_w=origin_x + (piece_width * 0.5),
-                    w_curve_1=origin_y + (piece_height * curve_multiplier_1),
-                    w_curve_2=origin_y + (piece_height * curve_multiplier_2),
-                    to_notch_start=origin_x + to_x_notch,
-                    to_notch_end=origin_x + to_x_notch + x_notch,
-                    control_point=origin_x
+                control_point_6 = control_point_2 - notch.real
+                control_point_7 = (
+                    origin_x
                     + (piece_width * 0.5)
-                    + ((to_x_notch + x_notch) - (piece_width * 0.5)) * 2,
+                    + ((to_x_notch + x_notch) - (piece_width * 0.5)) * 2
+                ) + (origin_y + (piece_height * curve_multiplier_2)) * 1j
+                control_point_8 = control_point_4 + notch.real
+                b_inverted = (
+                    f"C {xy(control_point_5)} {xy(control_point_1)} {xy(control_point_6)} "
+                    f"S {xy(control_point_7)} {xy(control_point_8)} "
+                    f"S {xy(end)} {xy(end)}"
                 )
                 all_commands["{}-{}-t".format(row + 1, col)] = b_inverted
             else:
