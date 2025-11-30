@@ -131,17 +131,12 @@ class Cut:
                 )
 
                 # Create an inverted version for replicating the Left side of the adjacent piece
-                control_point_5 = control_point_2 + notch.imag * 1j
-                control_point_7 = control_point_4 - notch.imag * 1j
-                control_point_6 = (
-                    v_00
-                    + piece_width * bend_m
-                    + piece_height * 1.5
-                    - (notch_start + notch).imag * 2 * 1j
+                control_point_5 = (
+                    v_00 + piece_width * bend_m + piece_height * (0.5 - notch_size)
                 )
                 r_inverted = (
-                    f"C {xy(v_11)} {xy(control_point_1)} {xy(control_point_5)} "
-                    f"S {xy(control_point_6)} {xy(control_point_7)} "
+                    f"C {xy(v_11)} {xy(control_point_1)} {xy(control_point_4)} "
+                    f"S {xy(control_point_5)} {xy(control_point_2)} "
                     f"S {xy(v_10)} {xy(v_10)}"
                 )
                 all_commands[f"{row}-{col + 1}-l"] = r_inverted
@@ -153,43 +148,29 @@ class Cut:
 
             # Bottom section
             if row < self.pieces_height:
-                control_point_1 = (
-                    v_00
-                    + half_piece_end
-                    - half_piece_end.imag * 1j
-                    + piece_height * bend_p
-                )
+                control_point_1 = v_00 + piece_width * 0.5 + piece_height * bend_p
                 control_point_2 = v_01 + (notch + notch_start).real
                 control_point_3 = (
-                    v_00
-                    + piece_width * 1.5
-                    - notch_start.real * 2
-                    - notch.real * 2
-                    + piece_height * bend_m
+                    v_00 + piece_width * (0.5 - notch_size) + piece_height * bend_m
                 )
                 control_point_4 = v_01 + notch_start.real
-                control_point_5 = v_00 + piece_height
 
                 # Generate curve
                 b = (
                     f"C {xy(v_11)} {xy(control_point_1)} {xy(control_point_2)} "
                     f"S {xy(control_point_3)} {xy(control_point_4)} "
-                    f"S {xy(control_point_5)} {xy(control_point_5)}"
+                    f"S {xy(v_01)} {xy(v_01)}"
                 )
 
                 # Create an inverted version for replicating the Left side of the adjacent piece
-                control_point_6 = control_point_2 - notch.real
-                control_point_7 = (
-                    v_00
-                    - piece_width * 0.5
-                    + notch_start.real * 2
-                    + notch.real * 2
-                    + piece_height * bend_m
+                control_point_5 = control_point_2 - notch.real
+                control_point_6 = (
+                    v_00 + piece_width * (0.5 + notch_size) + piece_height * bend_m
                 )
-                control_point_8 = control_point_4 + notch.real
+                control_point_7 = v_01 + (notch_start + notch).real
                 b_inverted = (
-                    f"C {xy(control_point_5)} {xy(control_point_1)} {xy(control_point_6)} "
-                    f"S {xy(control_point_7)} {xy(control_point_8)} "
+                    f"C {xy(v_01)} {xy(control_point_1)} {xy(control_point_5)} "
+                    f"S {xy(control_point_6)} {xy(control_point_7)} "
                     f"S {xy(v_11)} {xy(v_11)}"
                 )
                 all_commands[f"{row + 1}-{col}-t"] = b_inverted
