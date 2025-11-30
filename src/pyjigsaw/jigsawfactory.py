@@ -93,16 +93,22 @@ class Cut:
             vertex_h = origin + piece_height
 
             # Calculate distance to the start of the notch
-            notch_start = (1 - notch_size) / 2
-            to_notch = piece_end * notch_start
+            notch_start = piece_end * (1 - notch_size) / 2
             notch = piece_end * notch_size
 
             # Control points for the puzzle notch curve, randomise direction
-            curve_multiplier_1, curve_multiplier_2 = random.sample([0.85, 1.15], 2)
+            curve_bend = 0.15
+            side = random.choice([-1, 1])
+            curve_multiplier_1, curve_multiplier_2 = (
+                1 + side * curve_bend,
+                1 - side * curve_bend,
+            )
+
+            # curve_multiplier_1, curve_multiplier_2 = random.sample([0.85, 1.15], 2)
 
             # Start command dictionary for storing commands for reuse on adjacent Pieces
             commands = []
-            commands.append(f"M {origin.real:g},{origin.imag:g}")
+            commands.append(f"M {xy(origin)}")
 
             # Top section
             if row > 1:
@@ -120,14 +126,13 @@ class Cut:
                 control_point_1 = (
                     origin + piece_width * curve_multiplier_1 + piece_height * 0.5
                 )
-                control_point_2 = vertex_w + to_notch.imag * 1j
+                control_point_2 = vertex_w + notch_start.imag * 1j
                 control_point_3 = (
                     origin
                     + piece_width * curve_multiplier_2
-                    - piece_height * 0.5
-                    + (to_notch + notch).imag * 2 * 1j
+                    + piece_height * (0.5 + notch_size)
                 )
-                control_point_4 = vertex_w + (to_notch + notch).imag * 1j
+                control_point_4 = vertex_w + (notch_start + notch).imag * 1j
                 r = (
                     f"C {xy(vertex_w)} {xy(control_point_1)} {xy(control_point_2)} "
                     f"S {xy(control_point_3)} {xy(control_point_4)} "
@@ -141,7 +146,7 @@ class Cut:
                     origin
                     + piece_width * curve_multiplier_2
                     + piece_height * 1.5
-                    - (to_notch + notch).imag * 2 * 1j
+                    - (notch_start + notch).imag * 2 * 1j
                 )
                 r_inverted = (
                     f"C {xy(end)} {xy(control_point_1)} {xy(control_point_5)} "
@@ -163,15 +168,15 @@ class Cut:
                     - half_piece_end.imag * 1j
                     + piece_height * curve_multiplier_1
                 )
-                control_point_2 = vertex_h + (notch + to_notch).real
+                control_point_2 = vertex_h + (notch + notch_start).real
                 control_point_3 = (
                     origin
                     + piece_width * 1.5
-                    - to_notch.real * 2
+                    - notch_start.real * 2
                     - notch.real * 2
                     + piece_height * curve_multiplier_2
                 )
-                control_point_4 = vertex_h + to_notch.real
+                control_point_4 = vertex_h + notch_start.real
                 control_point_5 = origin + piece_height
 
                 # Generate curve
@@ -186,7 +191,7 @@ class Cut:
                 control_point_7 = (
                     origin
                     - piece_width * 0.5
-                    + to_notch.real * 2
+                    + notch_start.real * 2
                     + notch.real * 2
                     + piece_height * curve_multiplier_2
                 )
