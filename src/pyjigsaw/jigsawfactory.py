@@ -149,21 +149,22 @@ class Cut:
                 )
 
                 # Create an inverted version for replicating the Left side of the adjacent piece
+                control_point_5 = control_point_2 + notch.imag * 1j
+                control_point_7 = control_point_4 - notch.imag * 1j
+                control_point_6 = (
+                    origin.real
+                    + (piece_width * curve_multiplier_2)
+                    + (
+                        origin.imag
+                        + (piece_height * 0.5)
+                        - ((to_y_notch + y_notch) - (piece_height * 0.5)) * 2
+                    )
+                    * 1j
+                )
                 r_inverted = (
-                    "C {x:g},{y:g} {w_curve_1:g},{half_piece_h:g} {x:g},{to_notch_start:g} "
-                    "S {w_curve_2:g},{control_point:g} {x:g},{to_notch_end:g} S {x:g},{origin_h:g} {x:g},{origin_h:g}"
-                ).format(
-                    x=end_x,
-                    y=end_y,
-                    origin_h=origin_y,
-                    half_piece_h=origin_y + (piece_height * 0.5),
-                    w_curve_1=origin_x + (piece_width * curve_multiplier_1),
-                    w_curve_2=origin_x + (piece_width * curve_multiplier_2),
-                    to_notch_start=origin_y + to_y_notch + y_notch,
-                    to_notch_end=origin_y + to_y_notch,
-                    control_point=origin_y
-                    + (piece_height * 0.5)
-                    - ((to_y_notch + y_notch) - (piece_height * 0.5)) * 2,
+                    f"C {xy(end)} {xy(control_point_1)} {xy(control_point_5)} "
+                    f"S {xy(control_point_6)} {xy(control_point_7)} "
+                    f"S {xy(control_point_0)} {xy(control_point_0)}"
                 )
                 all_commands["{}-{}-l".format(row, col + 1)] = r_inverted
             else:
