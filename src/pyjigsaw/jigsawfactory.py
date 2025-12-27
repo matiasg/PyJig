@@ -4,6 +4,7 @@ import os
 import random
 from io import StringIO
 from math import ceil
+from typing import Callable
 
 from PIL import Image
 from svgpathtools import svg2paths
@@ -56,7 +57,6 @@ class Cut:
         piece_width = self.abs_width // self.pieces_width
         piece_height = (self.abs_height // self.pieces_height) * 1j
         piece_end = piece_width + piece_height
-        half_piece_end = piece_end / 2
         number_of_pieces = self.pieces_height * self.pieces_width
         col = 0
         paths = []
@@ -199,13 +199,11 @@ class Cut:
 
         paths = "\n\t".join(paths)
         self.svg_template = f"""\
-    <svg width="{self.abs_width}" height="{self.abs_height}">
-        {paths}
-    </svg>
+            <svg width="{self.abs_width}" height="{self.abs_height}">
+                {paths}
+            </svg>
         """
-
         self.metadata = metadata
-
         logger.info("Puzzle template update complete")
 
     def to_svg(self, filepath):
@@ -225,7 +223,7 @@ def image_encode(original_image):
 
 class Jigsaw:
     IMAGE_SVG = """\
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="{} {} {w} {h}" width="{w}" height="{h}">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="{xmin:g} {ymin:g} {w:g} {h:g}" width="{w:g}" height="{h:g}">
         <defs>
             <path id="cropPath" d="{d}" />
             <clipPath id="crop">
@@ -236,7 +234,7 @@ class Jigsaw:
     </svg>
     """
     NO_IMAGE_SVG = """\
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="{} {} {w} {h}" width="{w}" height="{h}">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="{xmin:g} {ymin:g} {w:g} {h:g}" width="{w:g}" height="{h:g}">
         <path d="{d}" stroke="black" fill="white"/>
     </svg>
     """
@@ -268,12 +266,18 @@ class Jigsaw:
             if self.image and ext and encoded:
                 # SVG with image
                 svg = self.IMAGE_SVG.format(
-                    xmin, ymin, w=width, h=height, d=path.d(), ext=ext, encoded=encoded
+                    xmin=xmin,
+                    ymin=ymin,
+                    w=width,
+                    h=height,
+                    d=path.d(),
+                    ext=ext,
+                    encoded=encoded,
                 )
             else:
                 # SVG without image (just the path shape)
                 svg = self.NO_IMAGE_SVG.format(
-                    xmin, ymin, w=width, h=height, d=path.d()
+                    xmin=xmin, ymin=ymin, w=width, h=height, d=path.d()
                 )
             with open(os.path.join(outdirectory, f"{p}.svg"), "w") as file:
                 file.write(svg)
