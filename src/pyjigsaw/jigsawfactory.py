@@ -11,10 +11,6 @@ from svgpathtools import svg2paths
 logger = logging.getLogger(__name__)
 
 
-def xy(z: complex) -> str:
-    return f"{z.real:g},{z.imag:g}"
-
-
 class Cut:
     def __init__(
         self,
@@ -25,6 +21,7 @@ class Cut:
         image: str | None = None,
         stroke_color: str = "black",
         fill_color: str = "white",
+        cmap: Callable[[complex], complex] = lambda z: z,
     ):
         self.pieces_height = pieces_height
         self.pieces_width = pieces_width
@@ -34,6 +31,7 @@ class Cut:
         self.stroke_color = stroke_color
         self.fill_color = fill_color
         self.use_image = image is not None
+        self.cmap = cmap
 
         if self.image is None:
             assert abs_height is not None and abs_width is not None, (
@@ -49,6 +47,10 @@ class Cut:
             self.abs_width, self.abs_height = Image.open(self.image).size
 
         self.update_cut_template()
+
+    def xy(self, z: complex) -> str:
+        z = self.cmap(z)
+        return f"{z.real:g},{z.imag:g}"
 
     def update_cut_template(self, notch_size=0.2):
         piece_width = self.abs_width // self.pieces_width
@@ -103,7 +105,7 @@ class Cut:
 
             # Start command dictionary for storing commands for reuse on adjacent Pieces
             commands = []
-            commands.append(f"M {xy(v_00)}")
+            commands.append(f"M {self.xy(v_00)}")
 
             # Top section
             if row > 1:
@@ -111,7 +113,7 @@ class Cut:
                 t = all_commands[f"{row}-{col}-t"]
             else:
                 # Edge piece
-                t = f"L {xy(v_10)}"
+                t = f"L {self.xy(v_10)}"
                 all_commands[f"{row}-{col}-t"] = t
             commands.append(t)
 
@@ -124,25 +126,29 @@ class Cut:
                     v_00 + piece_width * bend_m + piece_height * (0.5 + notch_size)
                 )
                 control_point_4 = v_10 + (notch_start + notch).imag * 1j
-                r = (
-                    f"C {xy(v_10)} {xy(control_point_1)} {xy(control_point_2)} "
-                    f"S {xy(control_point_3)} {xy(control_point_4)} "
-                    f"S {xy(v_11)} {xy(v_11)}"
-                )
-
-                # Create an inverted version for replicating the Left side of the adjacent piece
                 control_point_5 = (
                     v_00 + piece_width * bend_m + piece_height * (0.5 - notch_size)
                 )
+                r = (
+                    f"C {self.xy(v_10)} {self.xy(control_point_1)} {self.xy(control_point_2)} "
+                    f"C {self.xy(control_point_5)} {self.xy(control_point_3)} {self.xy(control_point_4)} "
+                    f"C {self.xy(control_point_1)} {self.xy(v_11)} {self.xy(v_11)}"
+                    # f"S {self.xy(control_point_3)} {self.xy(control_point_4)} "
+                    # f"S {self.xy(v_11)} {self.xy(v_11)}"
+                )
+
+                # Create an inverted version for replicating the Left side of the adjacent piece
                 r_inverted = (
-                    f"C {xy(v_11)} {xy(control_point_1)} {xy(control_point_4)} "
-                    f"S {xy(control_point_5)} {xy(control_point_2)} "
-                    f"S {xy(v_10)} {xy(v_10)}"
+                    f"C {self.xy(v_11)} {self.xy(control_point_1)} {self.xy(control_point_4)} "
+                    f"C {self.xy(control_point_3)} {self.xy(control_point_5)} {self.xy(control_point_2)} "
+                    f"C {self.xy(control_point_1)} {self.xy(v_10)} {self.xy(v_10)}"
+                    # f"S {self.xy(control_point_5)} {self.xy(control_point_2)} "
+                    # f"S {self.xy(v_10)} {self.xy(v_10)}"
                 )
                 all_commands[f"{row}-{col + 1}-l"] = r_inverted
             else:
                 # Edge piece
-                r = f"L {xy(v_11)}"
+                r = f"L {self.xy(v_11)}"
 
             commands.append(r)
 
@@ -157,29 +163,28 @@ class Cut:
 
                 # Generate curve
                 b = (
-                    f"C {xy(v_11)} {xy(control_point_1)} {xy(control_point_2)} "
-                    f"S {xy(control_point_3)} {xy(control_point_4)} "
-                    f"S {xy(v_01)} {xy(v_01)}"
+                    f"C {self.xy(v_11)} {self.xy(control_point_1)} {self.xy(control_point_2)} "
+                    f"S {self.xy(control_point_3)} {self.xy(control_point_4)} "
+                    f"S {self.xy(v_01)} {self.xy(v_01)}"
                 )
 
                 # Create an inverted version for replicating the Left side of the adjacent piece
-                control_point_5 = control_point_2 - notch.real
-                control_point_6 = (
+                control_point_5 = (
                     v_00 + piece_width * (0.5 + notch_size) + piece_height * bend_m
                 )
-                control_point_7 = v_01 + (notch_start + notch).real
                 b_inverted = (
-                    f"C {xy(v_01)} {xy(control_point_1)} {xy(control_point_5)} "
-                    f"S {xy(control_point_6)} {xy(control_point_7)} "
-                    f"S {xy(v_11)} {xy(v_11)}"
+                    f"C {self.xy(v_01)} {self.xy(control_point_1)} {self.xy(control_point_4)} "
+                    f"S {self.xy(control_point_5)} {self.xy(control_point_2)} "
+                    f"S {self.xy(v_11)} {self.xy(v_11)}"
                 )
                 all_commands[f"{row + 1}-{col}-t"] = b_inverted
             else:
                 # Edge piece
-                b = f"L {xy(v_01)}"
+                b = f"L {self.xy(v_01)}"
 
             commands.append(b)
 
+            # Left section
             if col > 1:
                 left_command = all_commands[f"{row}-{col}-l"]
                 commands.append(left_command)
