@@ -160,22 +160,22 @@ class Cut:
                     v_00 + piece_width * (0.5 - notch_size) + piece_height * bend_m
                 )
                 control_point_4 = v_01 + notch_start.real
+                control_point_5 = (
+                    v_00 + piece_width * (0.5 + notch_size) + piece_height * bend_m
+                )
 
                 # Generate curve
                 b = (
                     f"C {self.xy(v_11)} {self.xy(control_point_1)} {self.xy(control_point_2)} "
-                    f"S {self.xy(control_point_3)} {self.xy(control_point_4)} "
-                    f"S {self.xy(v_01)} {self.xy(v_01)}"
+                    f"C {self.xy(control_point_5)} {self.xy(control_point_3)} {self.xy(control_point_4)} "
+                    f"C {self.xy(control_point_1)} {self.xy(v_01)} {self.xy(v_01)}"
                 )
 
                 # Create an inverted version for replicating the Left side of the adjacent piece
-                control_point_5 = (
-                    v_00 + piece_width * (0.5 + notch_size) + piece_height * bend_m
-                )
                 b_inverted = (
                     f"C {self.xy(v_01)} {self.xy(control_point_1)} {self.xy(control_point_4)} "
-                    f"S {self.xy(control_point_5)} {self.xy(control_point_2)} "
-                    f"S {self.xy(v_11)} {self.xy(v_11)}"
+                    f"C {self.xy(control_point_3)} {self.xy(control_point_5)} {self.xy(control_point_2)} "
+                    f"C {self.xy(control_point_1)} {self.xy(v_11)} {self.xy(v_11)}"
                 )
                 all_commands[f"{row + 1}-{col}-t"] = b_inverted
             else:
