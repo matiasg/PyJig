@@ -53,6 +53,46 @@ class Cut:
         z = self.cmap(z)
         return f"{z.real:g},{z.imag:g}"
 
+    def make_sides(
+        self,
+        start: complex,
+        end: complex,
+        notch_ratio: float,
+        bend: float,
+        perpendicular_side: complex,
+    ):
+        """Makes a side with a notch by using Bezier curves.
+
+        It returns the side from start to end and also the same side from end to start.
+        The backwards side is needed for the contiguous piece.
+
+        The notch_ratio measures the size of the notch w.r.t end-start.
+        The bend parameter controls how much the notch bends outwards or inwards.
+        The direction the notch is bent depends on bend being >1 or <1 and perpendicular_side.
+        """
+        # control points
+        mid_p = (start + end) / 2
+        notch = (end - start) * notch_ratio
+        bent_perp = perpendicular_side * (bend - 1)
+        cp1 = mid_p + bent_perp
+        cp2 = mid_p - notch / 2
+        cp3 = mid_p - bent_perp - notch
+        cp4 = mid_p - bent_perp + notch
+        cp5 = mid_p + notch / 2
+        # forward curve
+        r = (
+            f"C {self.xy(start)} {self.xy(cp1)} {self.xy(cp2)} "
+            f"C {self.xy(cp3)} {self.xy(cp4)} {self.xy(cp5)} "
+            f"C {self.xy(cp1)} {self.xy(end)} {self.xy(end)}"
+        )
+        # backwards curve
+        r_inverted = (
+            f"C {self.xy(end)} {self.xy(cp1)} {self.xy(cp5)} "
+            f"C {self.xy(cp4)} {self.xy(cp3)} {self.xy(cp2)} "
+            f"C {self.xy(cp1)} {self.xy(start)} {self.xy(start)}"
+        )
+        return r, r_inverted
+
     def update_cut_template(self, notch_size=0.2):
         piece_width = self.abs_width // self.pieces_width
         piece_height = (self.abs_height // self.pieces_height) * 1j
@@ -94,14 +134,9 @@ class Cut:
             v_10 = v_00 + piece_width
             v_01 = v_00 + piece_height
 
-            # Notch and notch_start should actually live in R^2 but at this point it is easier to make them in C
-            notch_start = piece_end * (1 - notch_size) / 2
-            notch = piece_end * notch_size
-
             # Control points for the puzzle notch curve, randomise direction
             curve_bend = 0.15
-            side = random.choice([-curve_bend, curve_bend])
-            bend_p, bend_m = 1 + side, 1 - side
+            bend = random.choice([1 - curve_bend, 1 + curve_bend])
 
             # Start command dictionary for storing commands for reuse on adjacent Pieces
             commands = []
@@ -119,31 +154,8 @@ class Cut:
 
             # Right section
             if col < self.pieces_width:
-                # Generate curve
-                control_point_1 = v_00 + piece_width * bend_p + piece_height * 0.5
-                control_point_2 = v_10 + notch_start.imag * 1j
-                control_point_3 = (
-                    v_00 + piece_width * bend_m + piece_height * (0.5 + notch_size)
-                )
-                control_point_4 = v_10 + (notch_start + notch).imag * 1j
-                control_point_5 = (
-                    v_00 + piece_width * bend_m + piece_height * (0.5 - notch_size)
-                )
-                r = (
-                    f"C {self.xy(v_10)} {self.xy(control_point_1)} {self.xy(control_point_2)} "
-                    f"C {self.xy(control_point_5)} {self.xy(control_point_3)} {self.xy(control_point_4)} "
-                    f"C {self.xy(control_point_1)} {self.xy(v_11)} {self.xy(v_11)}"
-                    # f"S {self.xy(control_point_3)} {self.xy(control_point_4)} "
-                    # f"S {self.xy(v_11)} {self.xy(v_11)}"
-                )
-
-                # Create an inverted version for replicating the Left side of the adjacent piece
-                r_inverted = (
-                    f"C {self.xy(v_11)} {self.xy(control_point_1)} {self.xy(control_point_4)} "
-                    f"C {self.xy(control_point_3)} {self.xy(control_point_5)} {self.xy(control_point_2)} "
-                    f"C {self.xy(control_point_1)} {self.xy(v_10)} {self.xy(v_10)}"
-                    # f"S {self.xy(control_point_5)} {self.xy(control_point_2)} "
-                    # f"S {self.xy(v_10)} {self.xy(v_10)}"
+                r, r_inverted = self.make_sides(
+                    v_10, v_11, notch_size, bend, v_10 - v_00
                 )
                 all_commands[f"{row}-{col + 1}-l"] = r_inverted
             else:
@@ -154,28 +166,8 @@ class Cut:
 
             # Bottom section
             if row < self.pieces_height:
-                control_point_1 = v_00 + piece_width * 0.5 + piece_height * bend_p
-                control_point_2 = v_01 + (notch + notch_start).real
-                control_point_3 = (
-                    v_00 + piece_width * (0.5 - notch_size) + piece_height * bend_m
-                )
-                control_point_4 = v_01 + notch_start.real
-                control_point_5 = (
-                    v_00 + piece_width * (0.5 + notch_size) + piece_height * bend_m
-                )
-
-                # Generate curve
-                b = (
-                    f"C {self.xy(v_11)} {self.xy(control_point_1)} {self.xy(control_point_2)} "
-                    f"C {self.xy(control_point_5)} {self.xy(control_point_3)} {self.xy(control_point_4)} "
-                    f"C {self.xy(control_point_1)} {self.xy(v_01)} {self.xy(v_01)}"
-                )
-
-                # Create an inverted version for replicating the Left side of the adjacent piece
-                b_inverted = (
-                    f"C {self.xy(v_01)} {self.xy(control_point_1)} {self.xy(control_point_4)} "
-                    f"C {self.xy(control_point_3)} {self.xy(control_point_5)} {self.xy(control_point_2)} "
-                    f"C {self.xy(control_point_1)} {self.xy(v_11)} {self.xy(v_11)}"
+                b, b_inverted = self.make_sides(
+                    v_11, v_01, notch_size, bend, v_01 - v_00
                 )
                 all_commands[f"{row + 1}-{col}-t"] = b_inverted
             else:
