@@ -80,18 +80,18 @@ class Cut:
         cp4 = mid_p - bent_perp + notch
         cp5 = mid_p + notch / 2
         # forward curve
-        r = (
+        side = (
             f"C {self.xy(start)} {self.xy(cp1)} {self.xy(cp2)} "
             f"C {self.xy(cp3)} {self.xy(cp4)} {self.xy(cp5)} "
             f"C {self.xy(cp1)} {self.xy(end)} {self.xy(end)}"
         )
         # backwards curve
-        r_inverted = (
+        inverted_side = (
             f"C {self.xy(end)} {self.xy(cp1)} {self.xy(cp5)} "
             f"C {self.xy(cp4)} {self.xy(cp3)} {self.xy(cp2)} "
             f"C {self.xy(cp1)} {self.xy(start)} {self.xy(start)}"
         )
-        return r, r_inverted
+        return side, inverted_side
 
     def update_cut_template(self, notch_size=0.2):
         piece_width = self.abs_width // self.pieces_width
@@ -113,23 +113,21 @@ class Cut:
         }
 
         # Create svg path for each piece
-        for i in range(1, number_of_pieces + 1):
-            # Find grid position
-            row = ceil(i / self.pieces_width)
-            col = col + 1 if col < self.pieces_width else 1
+        for i in range(number_of_pieces):
+            row, col = i // self.pieces_width, i % self.pieces_width
 
             metadata["Pieces"].append(
                 {
                     "PieceNumber": i,
-                    "UpperEdge": row == 1,
-                    "LowerEdge": row == self.pieces_height,
-                    "LeftEdge": col == 1,
-                    "RightEdge": col == self.pieces_width,
+                    "UpperEdge": row == 0,
+                    "LowerEdge": row == self.pieces_height - 1,
+                    "LeftEdge": col == 0,
+                    "RightEdge": col == self.pieces_width - 1,
                 }
             )
 
             # Set piece vertices
-            v_00 = (col - 1) * piece_width + (row - 1) * piece_height
+            v_00 = col * piece_width + row * piece_height
             v_11 = v_00 + piece_end
             v_10 = v_00 + piece_width
             v_01 = v_00 + piece_height
@@ -143,7 +141,7 @@ class Cut:
             commands.append(f"M {self.xy(v_00)}")
 
             # Top section
-            if row > 1:
+            if row > 0:
                 # Use inverted command from adjacent piece
                 t = all_commands[f"{row}-{col}-t"]
             else:
@@ -153,7 +151,7 @@ class Cut:
             commands.append(t)
 
             # Right section
-            if col < self.pieces_width:
+            if col < self.pieces_width - 1:
                 r, r_inverted = self.make_sides(
                     v_10, v_11, notch_size, bend, v_10 - v_00
                 )
@@ -165,7 +163,7 @@ class Cut:
             commands.append(r)
 
             # Bottom section
-            if row < self.pieces_height:
+            if row < self.pieces_height - 1:
                 b, b_inverted = self.make_sides(
                     v_11, v_01, notch_size, bend, v_01 - v_00
                 )
@@ -177,7 +175,7 @@ class Cut:
             commands.append(b)
 
             # Left section
-            if col > 1:
+            if col > 0:
                 left_command = all_commands[f"{row}-{col}-l"]
                 commands.append(left_command)
 
