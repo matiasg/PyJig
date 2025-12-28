@@ -9,7 +9,7 @@ from tempfile import TemporaryDirectory
 
 def test_cut():
     random.seed(42)
-    cut = Cut(pieces_height=5, pieces_width=4, abs_height=10, abs_width=20)
+    cut = Cut(rows=5, columns=4, abs_height=10, abs_width=20)
     cut.update_cut_template()
     assert cut.image is None
     cut.update_cut_template()
@@ -37,7 +37,7 @@ def _oneline(lines_j: str) -> str:
 
 def test_jigsaw():
     random.seed(42)
-    cut = Cut(pieces_height=5, pieces_width=4, abs_height=10, abs_width=20)
+    cut = Cut(rows=5, columns=4, abs_height=10, abs_width=20)
     cut.update_cut_template()
     myjig = Jigsaw(cut, image=None)
     expected = {
