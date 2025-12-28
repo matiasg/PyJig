@@ -1,4 +1,5 @@
 import base64
+import json
 import logging
 import os
 import random
@@ -227,10 +228,9 @@ class Jigsaw:
 
     def __init__(self, cut: Cut, image: Path | str | None = None):
         self.cut = cut
-        self.image = image
+        self.image = Path(image) if isinstance(image, (Path, str)) else None
 
-    def generate_svg_jigsaw(self, outdirectory):
-        # Create output directory if it doesn't exist
+    def generate_svg_jigsaw(self, outdirectory: Path):
         os.makedirs(outdirectory, exist_ok=True)
 
         if self.image:
@@ -241,6 +241,9 @@ class Jigsaw:
         paths_ = svg2paths(StringIO(self.cut.svg_template))
         assert len(paths_) == 2
         paths, _ = paths_
+
+        # info for saving on puzzle.json
+        puzzle = []
 
         # Apply bounding box for each path and generate svg from template
         for p, path in enumerate(paths):
@@ -265,8 +268,14 @@ class Jigsaw:
                 svg = self.NO_IMAGE_SVG.format(
                     xmin=xmin, ymin=ymin, w=width, h=height, d=path.d()
                 )
-            with open(os.path.join(outdirectory, f"{p}.svg"), "w") as file:
+            fname = f"piece_{p}.svg"
+            with open(outdirectory / fname, "w") as file:
                 file.write(svg)
+
+            puzzle.append({"file": fname, "x": xmin, "y": ymin})
+
+        with open(outdirectory / "puzzle.json", "w") as metafile:
+            json.dump(puzzle, metafile)
 
         logger.info(
             "Svg puzzle set generated: %s (%d Pieces) Directory: %s",
