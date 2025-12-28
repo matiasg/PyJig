@@ -3,7 +3,7 @@ import logging
 import os
 import random
 from io import StringIO
-from math import ceil
+from pathlib import Path
 from typing import Callable
 
 from PIL import Image
@@ -15,17 +15,17 @@ logger = logging.getLogger(__name__)
 class Cut:
     def __init__(
         self,
-        pieces_height: int,
-        pieces_width: int,
+        rows: int,
+        columns: int,
         abs_height: int | None = None,
         abs_width: int | None = None,
-        image: str | None = None,
+        image: Path | str | None = None,
         stroke_color: str = "black",
         fill_color: str = "white",
-        cmap: Callable[[complex], complex] = lambda z: z,
+        cmap: Callable[[complex, float, float], complex] = lambda z, _w, _h: z,
     ):
-        self.pieces_height = pieces_height
-        self.pieces_width = pieces_width
+        self.rows = rows
+        self.columns = columns
         self.abs_height: int
         self.abs_width: int
         self.image = image
@@ -50,10 +50,10 @@ class Cut:
         self.update_cut_template()
 
     def xy(self, z: complex) -> str:
-        z = self.cmap(z)
+        z = self.cmap(z, self.abs_width, self.abs_height)
         return f"{z.real:g},{z.imag:g}"
 
-    def make_sides(
+    def notched_side(
         self,
         start: complex,
         end: complex,
@@ -94,17 +94,17 @@ class Cut:
         return side, inverted_side
 
     def update_cut_template(self, notch_size=0.2):
-        piece_width = self.abs_width // self.pieces_width
-        piece_height = (self.abs_height // self.pieces_height) * 1j
+        piece_width = self.abs_width // self.columns
+        piece_height = (self.abs_height // self.rows) * 1j
         piece_end = piece_width + piece_height
-        number_of_pieces = self.pieces_height * self.pieces_width
+        number_of_pieces = self.rows * self.columns
         col = 0
         paths = []
         all_commands = {}
         metadata = {
             "PiecesCount": number_of_pieces,
-            "Rows": self.pieces_height,
-            "Cols": self.pieces_width,
+            "Rows": self.rows,
+            "Cols": self.columns,
             "TotalWidth": self.abs_width,
             "TotalHeight": self.abs_height,
             "PieceWidth": piece_width,
@@ -114,15 +114,15 @@ class Cut:
 
         # Create svg path for each piece
         for i in range(number_of_pieces):
-            row, col = i // self.pieces_width, i % self.pieces_width
+            row, col = i // self.columns, i % self.columns
 
             metadata["Pieces"].append(
                 {
                     "PieceNumber": i,
                     "UpperEdge": row == 0,
-                    "LowerEdge": row == self.pieces_height - 1,
+                    "LowerEdge": row == self.rows - 1,
                     "LeftEdge": col == 0,
-                    "RightEdge": col == self.pieces_width - 1,
+                    "RightEdge": col == self.columns - 1,
                 }
             )
 
@@ -151,11 +151,9 @@ class Cut:
             commands.append(t)
 
             # Right section
-            if col < self.pieces_width - 1:
-                r, r_inverted = self.make_sides(
-                    v_10, v_11, notch_size, bend, v_10 - v_00
-                )
-                all_commands[f"{row}-{col + 1}-l"] = r_inverted
+            if col < self.columns - 1:
+                r, r_inv = self.notched_side(v_10, v_11, notch_size, bend, piece_width)
+                all_commands[f"{row}-{col + 1}-l"] = r_inv
             else:
                 # Edge piece
                 r = f"L {self.xy(v_11)}"
@@ -163,11 +161,9 @@ class Cut:
             commands.append(r)
 
             # Bottom section
-            if row < self.pieces_height - 1:
-                b, b_inverted = self.make_sides(
-                    v_11, v_01, notch_size, bend, v_01 - v_00
-                )
-                all_commands[f"{row + 1}-{col}-t"] = b_inverted
+            if row < self.rows - 1:
+                b, b_inv = self.notched_side(v_11, v_01, notch_size, bend, piece_height)
+                all_commands[f"{row + 1}-{col}-t"] = b_inv
             else:
                 # Edge piece
                 b = f"L {self.xy(v_01)}"
@@ -203,9 +199,9 @@ class Cut:
         logger.info("Puzzle cut template created %s", filepath)
 
 
-def image_encode(original_image):
-    ext = original_image.split(".")[1]
-    ext = "jpeg" if ext == "jpg" else ext
+def image_encode(original_image: Path):
+    ext = original_image.suffix[1:]
+    ext = "jpeg" if ext in ("jpg", "jpeg") else ext
     with open(original_image, "rb") as image:
         encoded_string = base64.b64encode(image.read()).decode("utf-8")
     return (ext, encoded_string)
@@ -229,7 +225,7 @@ class Jigsaw:
     </svg>
     """
 
-    def __init__(self, cut: Cut, image=None):
+    def __init__(self, cut: Cut, image: Path | str | None = None):
         self.cut = cut
         self.image = image
 
