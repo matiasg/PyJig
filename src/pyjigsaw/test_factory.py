@@ -55,10 +55,18 @@ def test_jigsaw():
         </svg>""",
     }
     with TemporaryDirectory() as td:
-        myjig.generate_svg_jigsaw(td)
-        outfiles = list(Path(td).glob("*.svg"))
+        tdp = Path(td)
+        myjig.generate_svg_jigsaw(tdp)
+        outfiles = list(tdp.glob("*.svg"))
         assert len(outfiles) == 20
         for i, content in expected.items():
-            with open(Path(td) / f"{i}.svg", "r") as svgf:
+            with open(tdp / f"piece_{i}.svg", "r") as svgf:
                 svg_content = svgf.read()
                 assert _oneline(svg_content) == _oneline(content)
+        with open(tdp / "puzzle.json", "r") as pj:
+            pjdata = json.load(pj)
+        assert len(pjdata) == 20
+        assert all(piece.keys() == {"file", "x", "y"} for piece in pjdata)
+        assert [piece["file"] for piece in pjdata] == [
+            f"piece_{i}.svg" for i in range(20)
+        ]
