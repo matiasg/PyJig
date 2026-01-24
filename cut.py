@@ -1,4 +1,5 @@
 import math
+from functools import wraps
 from argparse import ArgumentParser
 from pathlib import Path
 from typing import Callable
@@ -7,6 +8,7 @@ from pyjigsaw import jigsawfactory
 
 
 def at_unit_square(f: Callable[[complex], complex]):
+    @wraps(f)
     def g(z: complex, width: float, height: float) -> complex:
         c = width / 2 + (height / 2) * 1j
         m = max(width, height) / 2
@@ -19,8 +21,9 @@ def at_unit_square(f: Callable[[complex], complex]):
 
 @at_unit_square
 def zsq(z: complex) -> complex:
-    z += 1 + 1j
-    return z * z
+    z += 3
+    z *= z
+    return (z - 9) / 7
 
 
 @at_unit_square
@@ -41,12 +44,20 @@ def rgrw(z: complex) -> complex:
         return z
 
 
+@at_unit_square
+def conf(z: complex) -> complex:
+    return (z + 1) / (z - 3)
+
+
 def idz(z: complex, width: float, height: float) -> complex:
     return z
 
 
-def main(image: Path, outdir: Path, rows: int, cols: int):
-    mycut = jigsawfactory.Cut(rows, cols, image=image, cmap=rrot)
+FUNCTIONS = [rrot, conf, rgrw, zsq, idz]
+
+
+def main(image: Path, outdir: Path, rows: int, cols: int, cmap):
+    mycut = jigsawfactory.Cut(rows, cols, image=image, cmap=cmap)
     myjig = jigsawfactory.Jigsaw(mycut, image)
     myjig.generate_svg_jigsaw(outdir)
 
@@ -57,9 +68,17 @@ def parse():
     parser.add_argument("outdir", type=Path, help="path to output directory")
     parser.add_argument("--rows", type=int, default=5)
     parser.add_argument("--cols", type=int, default=8)
+    parser.add_argument(
+        "--deform-by",
+        type=str,
+        default="idz",
+        choices=[f.__name__ for f in FUNCTIONS],
+        help="deformation function to use",
+    )
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = parse()
-    main(args.image, args.outdir, args.rows, args.cols)
+    cmap = next(f for f in FUNCTIONS if f.__name__ == args.deform_by)
+    main(args.image, args.outdir, args.rows, args.cols, cmap)
